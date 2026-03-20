@@ -1,6 +1,7 @@
 import time
 import datetime
 import threading
+import uuid
 from collections import deque
 
 from services.job_manager import JobManager
@@ -41,9 +42,8 @@ class CrawlerService:
         except ValueError as e:
             raise ValueError(f"Validation failed: {e}")
 
-        Thread_id = threading.get_ident()
         Epoch_time = int(time.time())
-        crawler_id = f"{Epoch_time}_{Thread_id}"
+        crawler_id = f"{Epoch_time}_{uuid.uuid4().hex[:8]}"
 
         now = datetime.datetime.now(datetime.UTC).isoformat()
         job_data = {
@@ -83,6 +83,12 @@ class CrawlerService:
         job_data["updated_at"] = datetime.datetime.now(datetime.UTC).isoformat()
         write_json(crawler_data_path(crawler_id), job_data)
         self.job_manager.update_job(crawler_id, job_data)
+    def _sync_queue_state(self, crawler_id: str, job: dict, queue: deque) -> None:
+        rewrite_queue_file(crawler_id, list(queue))
+        job["queued_count"] = len(queue)
+        job["updated_at"] = datetime.datetime.now(datetime.UTC).isoformat()
+        write_json(crawler_data_path(crawler_id), job)
+        self.job_manager.update_job(crawler_id, job)
 
     def _load_runtime_queue(self, crawler_id: str, origin_url: str) -> deque:
         q = deque()
@@ -106,8 +112,7 @@ class CrawlerService:
             
             while queue and job["processed_count"] < job["max_urls_to_visit"] and job["status"] == "running":
                 depth, url = queue.popleft()
-                
-                rewrite_queue_file(crawler_id, list(queue))
+                self._sync_queue_state(crawler_id, job, queue)
                 
                 if depth > job["max_depth"]:
                     append_log(crawler_id, f"SKIP depth limit url={url}")
@@ -154,14 +159,26 @@ class CrawlerService:
                 
                 added_this_page = 0
                 for child_link in links:
-                    if depth + 1 <= job["max_depth"]:
-                        if len(queue) < job["queue_capacity"]:
-                            queue.append((depth + 1, child_link))
-                            added_this_page += 1
-                        else:
-                            job["throttled"] = True
-                            append_log(crawler_id, f"THROTTLED queue_capacity={job['queue_capacity']} url={child_link}")
-                            break
+                    if depth + 1 > job["max_depth"]:
+                        continue
+
+                    child_norm = normalize_url(child_link)
+                    if not child_norm or should_skip_url(child_norm):
+                        continue
+
+                    if child_norm == norm_url:
+                        continue
+
+                    if any(existing_url == child_norm for _, existing_url in queue):
+                        continue
+
+                    if len(queue) < job["queue_capacity"]:
+                        queue.append((depth + 1, child_norm))
+                        added_this_page += 1
+                    else:
+                        job["throttled"] = True
+                        append_log(crawler_id, f"THROTTLED queue_capacity={job['queue_capacity']} url={child_norm}")
+                        break
                             
                 if len(queue) < job["queue_capacity"]:
                     job["throttled"] = False
@@ -174,6 +191,8 @@ class CrawlerService:
                 rewrite_queue_file(crawler_id, list(queue))
 
             if job["status"] == "running":
+                job["queued_count"] = len(queue)
+                rewrite_queue_file(crawler_id, list(queue))
                 job["status"] = "completed"
                 append_log(crawler_id, f"COMPLETE processed={job['processed_count']}")
                 self._persist_job_state(crawler_id, job)
