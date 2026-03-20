@@ -13,6 +13,7 @@
                     document.getElementById('discovered').innerText = data.discovered_count;
                     document.getElementById('queued').innerText = data.queued_count;
                     document.getElementById('throttled').innerText = data.throttled;
+                    document.getElementById('throttled_ever').innerText = data.throttled_ever;
                     document.getElementById('updated_at').innerText = data.updated_at;
                     document.getElementById('error_msg').innerText = data.error_message || '';
 
@@ -31,7 +32,8 @@
     <p><b>Processed Count:</b> <span id="processed">{{ job.processed_count }}</span></p>
     <p><b>Discovered Count:</b> <span id="discovered">{{ job.discovered_count }}</span></p>
     <p><b>Queued Count:</b> <span id="queued">{{ job.queued_count }}</span></p>
-    <p><b>Throttled:</b> <span id="throttled">{{ job.throttled }}</span></p>
+    <p><b>Throttled now:</b> <span id="throttled">{{ job.throttled }}</span></p>
+    <p><b>Throttled during run:</b> <span id="throttled_ever">{{ job.throttled_ever }}</span></p>
     <p><b>Last Updated:</b> <span id="updated_at">{{ job.updated_at }}</span></p>
     <p style="color:red;"><b id="error_msg">{{ job.error_message }}</b></p>
     

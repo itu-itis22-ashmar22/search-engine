@@ -60,6 +60,7 @@ class CrawlerService:
             "discovered_count": 0,
             "queued_count": 1,
             "throttled": False,
+            "throttled_ever": False,
             "error_message": ""
         }
 
@@ -177,6 +178,7 @@ class CrawlerService:
                         added_this_page += 1
                     else:
                         job["throttled"] = True
+                        job["throttled_ever"] = True
                         append_log(crawler_id, f"THROTTLED queue_capacity={job['queue_capacity']} url={child_norm}")
                         break
                             
