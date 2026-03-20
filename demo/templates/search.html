@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Engine Demo</title>
+</head>
+<body>
+    <h1>Live Search</h1>
+    <form method="GET" action="/search">
+        <input type="text" name="query" value="{{ query }}" placeholder="Enter keywords...">
+        <button type="submit">Search</button>
+    </form>
+    
+    <h2>Results</h2>
+    {% if query and not results %}
+        <p>No results found for "{{ query }}".</p>
+    {% elif results %}
+        <p>Found {{ results|length }} results.</p>
+        <table border="1" cellpadding="5">
+            <tr>
+                <th>Relevant URL</th>
+                <th>Origin URL</th>
+                <th>Depth</th>
+                <th>Frequency</th>
+            </tr>
+            {% for r in results %}
+            <tr>
+                <td><a href="{{ r.relevant_url }}" target="_blank">{{ r.relevant_url }}</a></td>
+                <td><a href="{{ r.origin_url }}" target="_blank">{{ r.origin_url }}</a></td>
+                <td>{{ r.depth }}</td>
+                <td><small>{{ r.total_frequency }}</small></td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+    
+    <br>
+    <a href="/crawler">Back to Crawlers</a>
+</body>
+</html>

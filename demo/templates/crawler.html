@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crawler Demo</title>
+</head>
+<body>
+    <h1>Local Web Crawler</h1>
+    {% if error %}
+    <p style="color: red;"><b>Error:</b> {{ error }}</p>
+    {% endif %}
+    
+    <form method="POST" action="/crawler">
+        <label>Origin URL: <input type="text" name="origin_url" value="https://example.com/"></label><br>
+        <label>Max Depth: <input type="number" name="max_depth" value="1"></label><br>
+        <label>Hit Rate (sec): <input type="number" step="0.1" name="hit_rate_seconds" value="0.5"></label><br>
+        <label>Max URLs: <input type="number" name="max_urls_to_visit" value="10"></label><br>
+        <label>Queue Capacity: <input type="number" name="queue_capacity" value="50"></label><br>
+        <button type="submit">Start Crawler</button>
+    </form>
+
+    <h2>Existing Crawlers</h2>
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>ID</th>
+            <th>Origin URL</th>
+            <th>Status</th>
+            <th>Processed</th>
+            <th>Queued</th>
+            <th>Throttled</th>
+            <th>Link</th>
+        </tr>
+        {% for c in crawlers %}
+        <tr>
+            <td>{{ c.crawler_id }}</td>
+            <td>{{ c.origin_url }}</td>
+            <td>{{ c.status }}</td>
+            <td>{{ c.processed_count }}</td>
+            <td>{{ c.queued_count }}</td>
+            <td>{{ c.throttled }}</td>
+            <td><a href="/crawler/{{ c.crawler_id }}">View Status</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/search">Go to Search</a>
+</body>
+</html>
